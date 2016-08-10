@@ -1,14 +1,12 @@
-library w_flux.mixins.batched_redraws;
-
 import 'dart:async';
 import 'dart:html';
 
 import 'package:react/react.dart' as react;
 
 class _RedrawScheduler implements Function {
-  Set<react.Component> _components = new Set();
+  Set<BatchedRedraws> _components = new Set();
 
-  void call(react.Component component) {
+  void call(BatchedRedraws component) {
     if (_components.isEmpty) {
       _tick();
     }
@@ -17,11 +15,12 @@ class _RedrawScheduler implements Function {
 
   Future _tick() async {
     await window.animationFrame;
-    _components
-      ..forEach((c) {
-        c.setState({});
-      })
-      ..clear();
+    for (var c in _components) {
+      if (c.shouldRedraw) {
+        (c as react.Component)?.setState({});
+      }
+    }
+    _components.clear();
   }
 }
 
@@ -39,5 +38,6 @@ _RedrawScheduler _scheduleRedraw = new _RedrawScheduler();
 ///     }
 ///
 class BatchedRedraws {
-  void redraw() => _scheduleRedraw(this as react.Component);
+  bool get shouldRedraw => true;
+  void redraw() => _scheduleRedraw(this);
 }
